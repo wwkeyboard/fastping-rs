@@ -41,6 +41,19 @@ impl Ping {
         }
     }
 
+    pub fn new_with_seq(addr: IpAddr, seq: u16) -> Ping {
+        let mut identifier = 0;
+        if addr.is_ipv4() {
+            identifier = random::<u16>();
+        }
+        Ping {
+            addr,
+            identifier,
+            sequence_number: seq,
+            seen: false,
+        }
+    }
+
     pub fn get_addr(&self) -> IpAddr {
         return self.addr;
     }

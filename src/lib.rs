@@ -138,6 +138,21 @@ impl Pinger {
         };
     }
 
+    // add either an ipv4 or ipv6 target address for pinging
+    pub fn add_ipaddr_with_sequence_number(&self, ipaddr: &str, seq: u16) {
+        let addr = ipaddr.parse::<IpAddr>();
+        match addr {
+            Ok(valid_addr) => {
+                debug!("Address added {}", valid_addr);
+                let new_ping = Ping::new_with_seq(valid_addr, seq);
+                self.targets.lock().unwrap().insert(valid_addr, new_ping);
+            }
+            Err(e) => {
+                error!("Error adding ip address {}. Error: {}", ipaddr, e);
+            }
+        };
+    }
+
     // remove a previously added ipv4 or ipv6 target address
     pub fn remove_ipaddr(&self, ipaddr: &str) {
         let addr = ipaddr.parse::<IpAddr>();
