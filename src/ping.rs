@@ -151,6 +151,7 @@ pub fn send_pings(
                                     match results_sender.send(PingResult::Receive {
                                         addr: ping_result.addr,
                                         rtt: ping_result.rtt,
+                                        seq: sequence_number,
                                     }) {
                                         Ok(_) => {}
                                         Err(e) => {

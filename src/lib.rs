@@ -29,8 +29,14 @@ pub type NewPingerResult = Result<(Pinger, Receiver<PingResult>), String>;
 // ping result type.  Idle represents pings that have not received a repsonse within the max_rtt.
 // Receive represents pings which have received a repsonse
 pub enum PingResult {
-    Idle { addr: IpAddr },
-    Receive { addr: IpAddr, rtt: Duration },
+    Idle {
+        addr: IpAddr,
+    },
+    Receive {
+        addr: IpAddr,
+        rtt: Duration,
+        seq: u16,
+    },
 }
 
 pub struct Pinger {
