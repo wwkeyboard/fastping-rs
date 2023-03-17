@@ -25,8 +25,8 @@ fn main() {
                 Idle { addr } => {
                     error!("Idle Address {}.", addr);
                 }
-                Receive { addr, rtt } => {
-                    info!("Receive from Address {} in {:?}.", addr, rtt);
+                Receive { addr, rtt, seq } => {
+                    info!("Receive {} from Address {} in {:?}.", seq, addr, rtt);
                 }
             },
             Err(_) => panic!("Worker threads disconnected before the solution was found!"),

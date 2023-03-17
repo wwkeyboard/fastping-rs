@@ -9,6 +9,8 @@ mod ping;
 use ping::{send_pings, Ping, ReceivedPing};
 use pnet::packet::icmp::echo_reply::EchoReplyPacket;
 use pnet::packet::ip::IpNextHeaderProtocols;
+use pnet::packet::ipv4::Ipv4Packet;
+use pnet::packet::ipv6::Ipv6Packet;
 use pnet::packet::Packet;
 use pnet::packet::{icmp, icmpv6};
 use pnet::transport::transport_channel;
@@ -36,6 +38,7 @@ pub enum PingResult {
         addr: IpAddr,
         rtt: Duration,
         seq: u16,
+        ttl: u8,
     },
 }
 
@@ -252,11 +255,17 @@ impl Pinger {
                         Some(echo_reply) => {
                             if packet.get_icmp_type() == icmp::IcmpType::new(0) {
                                 let start_time = timer.read().unwrap();
+
+                                let ttl = Ipv4Packet::new(packet.packet())
+                                    .map(|p| p.get_ttl())
+                                    .unwrap_or_default();
+
                                 match thread_tx.send(ReceivedPing {
                                     addr,
                                     identifier: echo_reply.get_identifier(),
                                     sequence_number: echo_reply.get_sequence_number(),
                                     rtt: Instant::now().duration_since(*start_time),
+                                    ttl: ttl,
                                 }) {
                                     Ok(_) => {}
                                     Err(e) => {
@@ -298,11 +307,15 @@ impl Pinger {
                     Ok((packet, addr)) => {
                         if packet.get_icmpv6_type() == icmpv6::Icmpv6Type::new(129) {
                             let start_time = timerv6.read().unwrap();
+                            let ttl = Ipv6Packet::new(packet.packet())
+                                .map(|p| p.get_hop_limit())
+                                .unwrap_or_default();
                             match thread_txv6.send(ReceivedPing {
                                 addr,
                                 identifier: 0,
                                 sequence_number: 0,
                                 rtt: Instant::now().duration_since(*start_time),
+                                ttl: ttl,
                             }) {
                                 Ok(_) => {}
                                 Err(e) => {
@@ -427,7 +440,12 @@ mod tests {
                             PingResult::Idle { addr } => {
                                 assert_eq!("7.7.7.7".parse::<IpAddr>().unwrap(), addr);
                             }
-                            PingResult::Receive { addr, rtt: _ } => {
+                            PingResult::Receive {
+                                addr,
+                                rtt: _,
+                                seq: _,
+                                ttl: _,
+                            } => {
                                 if addr == "::1".parse::<IpAddr>().unwrap()
                                     || addr == "127.0.0.1".parse::<IpAddr>().unwrap()
                                 {
@@ -435,9 +453,6 @@ mod tests {
                                 } else {
                                     assert!(false)
                                 }
-                            }
-                            _ => {
-                                assert!(false)
                             }
                         },
                         Err(_) => assert!(false),

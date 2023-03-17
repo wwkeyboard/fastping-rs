@@ -25,6 +25,7 @@ pub struct ReceivedPing {
     pub identifier: u16,
     pub sequence_number: u16,
     pub rtt: Duration,
+    pub ttl: u8,
 }
 
 impl Ping {
@@ -152,7 +153,8 @@ pub fn send_pings(
                             addr,
                             identifier,
                             sequence_number,
-                            rtt: _,
+                            rtt,
+                            ttl,
                         } => {
                             // Update the address to the ping response being received
                             if let Some(ping) = targets.lock().unwrap().get_mut(&addr) {
@@ -163,8 +165,9 @@ pub fn send_pings(
                                     // Send the ping result over the client channel
                                     match results_sender.send(PingResult::Receive {
                                         addr: ping_result.addr,
-                                        rtt: ping_result.rtt,
+                                        rtt,
                                         seq: sequence_number,
+                                        ttl,
                                     }) {
                                         Ok(_) => {}
                                         Err(e) => {
@@ -181,7 +184,6 @@ pub fn send_pings(
                                 }
                             }
                         }
-                        _ => {}
                     }
                 }
                 Err(_) => {
